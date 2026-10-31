@@ -23,17 +23,18 @@ export async function getEntitlement(userId: string): Promise<Entitlement> {
       .limit(1);
 
     if (error) throw error;
-    const row = data?.[0] as
-      | { ends_at: string; plan: { code: string; name: string } | null }
+    const row = data?.[0] as unknown as
+      | { ends_at: string; plan: { code: string; name: string } | { code: string; name: string }[] | null }
       | undefined;
+    const plan = Array.isArray(row?.plan) ? row?.plan[0] : row?.plan;
 
-    if (!row?.plan) {
+    if (!row || !plan) {
       return { premium: false, planCode: null, planName: null, expiresAt: null };
     }
     return {
-      premium: PREMIUM_PLAN_CODES.has(row.plan.code),
-      planCode: row.plan.code,
-      planName: row.plan.name,
+      premium: PREMIUM_PLAN_CODES.has(plan.code),
+      planCode: plan.code,
+      planName: plan.name,
       expiresAt: row.ends_at,
     };
   } catch (err) {
