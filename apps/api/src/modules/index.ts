@@ -7,6 +7,8 @@ import { genresRouter } from "./catalog/genres.routes.js";
 import { usersRouter } from "./users/users.routes.js";
 import { favoritesRouter } from "./favorites/favorites.routes.js";
 import { playlistsRouter } from "./playlists/playlists.routes.js";
+import { searchRouter } from "./search/search.routes.js";
+import { trendingRouter, newReleasesRouter, discoverRouter } from "./search/discovery.routes.js";
 
 /**
  * Versioned API surface. Route groups are registered here as they are
@@ -23,3 +25,7 @@ v1Router.use("/genres", genresRouter);
 v1Router.use("/users", usersRouter);
 v1Router.use("/favorites", favoritesRouter);
 v1Router.use("/playlists", playlistsRouter);
+v1Router.use("/search", searchRouter);
+v1Router.use("/trending", trendingRouter);
+v1Router.use("/releases/new", newReleasesRouter);
+v1Router.use("/discover", discoverRouter);
