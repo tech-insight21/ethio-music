@@ -14,6 +14,7 @@ import { notificationsRouter, adminNotificationsRouter } from "./notifications/n
 import { paymentsRouter, subscriptionsRouter } from "./payments/payments.routes.js";
 import { telegramRouter } from "./telegram/telegram.routes.js";
 import { analyticsRouter } from "./analytics/analytics.routes.js";
+import { promotionsRouter, adminPromotionsRouter } from "./promotions/promotions.routes.js";
 
 /**
  * Versioned API surface. Route groups are registered here as they are
@@ -41,3 +42,5 @@ v1Router.use("/payments", paymentsRouter);
 v1Router.use("/subscriptions", subscriptionsRouter);
 v1Router.use("/telegram", telegramRouter);
 v1Router.use("/analytics", analyticsRouter);
+v1Router.use("/promotions", promotionsRouter);
+v1Router.use("/admin/promotions", adminPromotionsRouter);

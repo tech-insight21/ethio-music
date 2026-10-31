@@ -11,6 +11,7 @@ import { paginationSchema, pageMeta } from "../../utils/paginate.js";
 import { getEntitlement } from "../../lib/entitlement.js";
 import { supabaseService } from "../../lib/supabase.js";
 import { createStarsInvoice, listPayments, refundStarsPayment } from "./payments.service.js";
+import { createPromotionInvoice } from "../promotions/promotions.routes.js";
 
 const router = Router();
 
@@ -24,6 +25,23 @@ router.post(
     const { plan_id } = req.body as { plan_id: string };
     const intent = await createStarsInvoice(req.user!.id, plan_id);
     res.status(201).json({ payment_id: intent.paymentId, invoice_link: intent.invoiceLink, amount_stars: intent.amountStars });
+  }),
+);
+
+/** POST /payments/promotions/:id/invoice — Stars invoice for a campaign. */
+router.post(
+  "/promotions/:id/invoice",
+  authenticate,
+  writeLimiter,
+  validate({
+    params: z.object({ id: z.string().uuid() }),
+    body: z.object({ amount_stars: z.number().int().min(50).max(100_000) }),
+  }),
+  ah(async (req, res) => {
+    const { id } = req.params;
+    const { amount_stars } = req.body as { amount_stars: number };
+    const intent = await createPromotionInvoice(req.user!.id, id, amount_stars);
+    res.status(201).json({ payment_id: intent.paymentId, invoice_link: intent.invoiceLink });
   }),
 );
 
