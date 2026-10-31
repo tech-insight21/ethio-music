@@ -40,6 +40,7 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().min(10).optional(),
   TG_WEBHOOK_SECRET: z.string().min(8).optional(),
   TG_INITDATA_MAX_AGE: z.coerce.number().int().positive().default(86_400),
+  TMA_URL: z.string().url().default("https://tech-insight21.github.io/ethio-music/"),
 
   // HTTP
   CORS_ORIGINS: z.string().default(""),

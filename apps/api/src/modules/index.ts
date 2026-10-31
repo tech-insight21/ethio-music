@@ -10,6 +10,9 @@ import { playlistsRouter } from "./playlists/playlists.routes.js";
 import { searchRouter } from "./search/search.routes.js";
 import { trendingRouter, newReleasesRouter, discoverRouter } from "./search/discovery.routes.js";
 import { adminRouter } from "./admin/admin.routes.js";
+import { notificationsRouter, adminNotificationsRouter } from "./notifications/notifications.routes.js";
+import { paymentsRouter, subscriptionsRouter } from "./payments/payments.routes.js";
+import { telegramRouter } from "./telegram/telegram.routes.js";
 
 /**
  * Versioned API surface. Route groups are registered here as they are
@@ -30,4 +33,9 @@ v1Router.use("/search", searchRouter);
 v1Router.use("/trending", trendingRouter);
 v1Router.use("/releases/new", newReleasesRouter);
 v1Router.use("/discover", discoverRouter);
+v1Router.use("/notifications", notificationsRouter);
+v1Router.use("/admin/notifications", adminNotificationsRouter);
 v1Router.use("/admin", adminRouter);
+v1Router.use("/payments", paymentsRouter);
+v1Router.use("/subscriptions", subscriptionsRouter);
+v1Router.use("/telegram", telegramRouter);

@@ -16,6 +16,7 @@ export default defineConfig({
       NODE_ENV: "test",
       WORKER_ENABLED: "false",
       LOG_LEVEL: "warn",
+      TG_WEBHOOK_SECRET: "emg-test-webhook-secret-0123456789",
       // integration suites legitimately exceed per-IP budgets
       RATE_LIMIT_MAX: "1000",
       AUTH_RATE_LIMIT_MAX: "1000",
