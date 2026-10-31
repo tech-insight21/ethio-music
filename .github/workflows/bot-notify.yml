@@ -1,0 +1,48 @@
+name: bot-notify
+# Headless new-release dispatch (requirement: notify users about new releases).
+# Runs every 30 minutes, plus on demand. The engine:
+#   1. reads the release watermark from bot_state
+#   2. finds approved songs created after it (anon REST — approved-only via RLS)
+#   3. fans out to opted-in chats + followers, claim-before-send through the
+#      bot_sent_notifications composite PK → duplicates are impossible
+#   4. advances the watermark
+# No server hosting needed — outbound HTTPS only.
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: bot-notify
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/bot/package-lock.json
+
+      - name: Install
+        working-directory: apps/bot
+        run: npm ci
+
+      - name: Dispatch new-release notifications
+        working-directory: apps/bot
+        env:
+          NOTIFY_ONLY: "1"
+          LOG_LEVEL: info
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_REF: ${{ secrets.SUPABASE_REF }}
+          SUPABASE_POOLER_HOST: ${{ secrets.SUPABASE_POOLER_HOST }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: npm run notify

@@ -69,5 +69,21 @@ jobs:
             -d "{\"menu_button\":{\"type\":\"web_app\",\"text\":\"🎵 ETHIO MUSIC\",\"web_app\":{\"url\":\"${TMA_URL}\"}}}"
           curl -sf "https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands" \
             -H "Content-Type: application/json" \
-            -d '{"commands":[{"command":"start","description":"🇪🇹 Open ETHIO MUSIC"},{"command":"trending","description":"🔥 Trending songs"},{"command":"search","description":"🔍 Search the catalog"},{"command":"plans","description":"⭐ Subscription plans"}]}'
-          echo "Telegram menu button + commands configured."
+            -d '{"commands":[
+              {"command":"start","description":"🇪🇹 Welcome + main menu"},
+              {"command":"app","description":"🎵 Open the music app"},
+              {"command":"search","description":"🔍 Find songs & artists"},
+              {"command":"trending","description":"🔥 Most-played songs"},
+              {"command":"new","description":"🆕 Fresh releases"},
+              {"command":"artists","description":"🎤 Discover & follow artists"},
+              {"command":"premium","description":"⭐ Subscription plans (ETB)"},
+              {"command":"settings","description":"🔔 Notification preferences"},
+              {"command":"paysupport","description":"💳 Billing help"},
+              {"command":"help","description":"❓ Everything the bot can do"}]}'
+          curl -sf "https://api.telegram.org/bot${BOT_TOKEN}/setMyDescription" \
+            -H "Content-Type: application/json" \
+            -d '{"description":"Ethiopia'"'"'s music bot — trending songs, artist follows, new-release alerts and the full mini app."}'
+          curl -sf "https://api.telegram.org/bot${BOT_TOKEN}/setMyShortDescription" \
+            -H "Content-Type: application/json" \
+            -d '{"short_description":"🇪🇹 Ethiopia'"'"'s music home in Telegram."}'
+          echo "Telegram menu button + commands + profile configured."
