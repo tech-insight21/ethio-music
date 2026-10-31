@@ -87,6 +87,10 @@ alter table public.bot_chats
 create index if not exists idx_bot_chats_user
   on public.bot_chats (user_id) where user_id is not null;
 
+-- profiles.preferences — in-app notification & playback preferences (JSONB)
+alter table public.profiles
+  add column if not exists preferences jsonb not null default '{}'::jsonb;
+
 -- ---------------------------------------------------------------------------
 -- 5. plans / songs — small additive columns
 -- ---------------------------------------------------------------------------
