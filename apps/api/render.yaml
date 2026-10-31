@@ -1,0 +1,38 @@
+# Render.com blueprint — deploy with: render blueprint launch
+# (or connect the repo in the Render dashboard; this file is picked up automatically)
+services:
+  - type: web
+    name: ethio-music-api
+    runtime: docker
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: SUPABASE_REF
+        sync: false
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      - key: SUPABASE_POOLER_HOST
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TG_WEBHOOK_SECRET
+        generateValue: true
+      - key: TMA_URL
+        value: https://tech-insight21.github.io/ethio-music/
+      - key: CORS_ORIGINS
+        value: https://tech-insight21.github.io
+      - key: WORKER_ENABLED
+        value: "true"

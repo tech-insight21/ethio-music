@@ -8,6 +8,12 @@ Built on Supabase (PostgreSQL + Row Level Security). **Only licensed releases ar
 ```
 ethio-music/
 ├── apps/
+│   ├── api/                    # REST API — Node.js, TypeScript, Express, Zod
+│   │   └── src/                # modular: auth / catalog / users / playlists /
+│   │   │                       # search / payments (Telegram Stars) / promotions /
+│   │   │                       # notifications (worker) / analytics / admin
+│   │   ├── tests/              # 117 integration tests (vitest + supertest, live project)
+│   │   └── docs/               # ARCHITECTURE / API / DEPLOYMENT / ENVIRONMENT
 │   ├── tma/                    # Telegram Mini App — Next.js, static export → GitHub Pages
 │   │   └── src/
 │   │       ├── app/            # 13 routes: / search/ trending/ artists/ artist/ album/
@@ -16,16 +22,40 @@ ethio-music/
 │   │       └── lib/            # supabase queries, auth, player, favorites, telegram SDK
 │   └── bot/                    # Telegram bot — Telegraf, modular (see below)
 ├── supabase/
-│   ├── migrations/             # Ordered SQL migrations (schema + RLS + seed + bot)
+│   ├── migrations/             # Ordered SQL migrations (schema + RLS + seed + bot + api)
 │   └── functions/telegram-auth/# Edge Function: verifies initData, mints sessions
 ├── scripts/
-│   └── run_migrations.py       # Idempotent migration runner (local + CI)
+│   ├── run_migrations.py       # Idempotent migration runner (local + CI)
+│   ├── verify_api_schema.py    # Post-migration schema verification
+│   └── gh_set_secret.py        # GitHub Actions secret helper
 └── .github/workflows/
     ├── deploy.yml              # Build TMA → GitHub Pages → sync bot profile/commands
     ├── db-migrate.yml          # Apply pending migrations on push
+    ├── api-ci.yml              # API: typecheck → build → 117 integration tests
     ├── bot-notify.yml          # Every 30 min: new-release dispatch (headless)
     └── deploy-functions.yml    # Deploy edge functions (needs SUPABASE_ACCESS_TOKEN)
 ```
+
+## REST API (apps/api)
+
+One backend for the **bot, mini app and admin dashboard**: `/api/v1/*`.
+
+- **Auth**: Telegram Mini App `initData` (official HMAC algorithm) → Supabase
+  sessions; admin password login; refresh rotation; logout/revocation.
+- **RBAC**: moderator/admin/super_admin permission matrix, live re-checked
+  from `admin_roles`; every privileged mutation lands in `audit_logs`.
+- **Money**: Telegram Stars — invoices via `createInvoiceLink`, activation
+  ONLY through the secret-verified webhook in one transaction
+  (unique `provider_ref` + `payload` = replay-safe). No client-side
+  "payment success" is ever trusted.
+- **Notifications**: DB-level dedup (`UNIQUE (user_id, dedup_key)`),
+  `FOR UPDATE SKIP LOCKED` worker, preference honoring, exponential-backoff
+  retries, cron fan-out deduped via `job_runs`.
+- **Security**: Zod everywhere, parameterized SQL, rate-limit tiers, CORS
+  allowlist, helmet, upload type/size gates, service-role key server-only.
+
+Docs: `apps/api/docs/ARCHITECTURE.md` · `API.md` · `DEPLOYMENT.md` ·
+`ENVIRONMENT.md`. Tests: `cd apps/api && npm test` (117).
 
 ## Mini app (apps/tma) — 13 pages
 
