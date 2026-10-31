@@ -22,15 +22,40 @@ export interface CatalogSong {
 }
 
 export async function searchSongs(query: string, limit = 5): Promise<CatalogSong[]> {
-  const { data, error } = await supabase
-    .from("songs")
-    .select("id, title, slug, duration_seconds, play_count, artist:artists(name, slug)")
-    .eq("release_status", "approved")
-    .or(`title.ilike.%${query}%,artists.name.ilike.%${query}%`)
-    .order("play_count", { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data ?? []) as unknown as CatalogSong[];
+  // NOTE: PostgREST does not accept embedded-resource filters inside .or(),
+  // so title and artist matches run as two queries and merge.
+  const cols = "id, title, slug, duration_seconds, play_count, artist:artists(name, slug)";
+  const [byTitle, byArtistName] = await Promise.all([
+    supabase
+      .from("songs")
+      .select(cols)
+      .eq("release_status", "approved")
+      .ilike("title", `%${query}%`)
+      .order("play_count", { ascending: false })
+      .limit(limit),
+    supabase.from("artists").select("id").ilike("name", `%${query}%`).limit(limit),
+  ]);
+
+  const merged: CatalogSong[] = [...((byTitle.data ?? []) as unknown as CatalogSong[])];
+  const seen = new Set(merged.map((s) => s.id));
+
+  const artistIds = (byArtistName.data ?? []).map((a) => a.id);
+  if (artistIds.length > 0) {
+    const { data, error } = await supabase
+      .from("songs")
+      .select(cols)
+      .eq("release_status", "approved")
+      .in("artist_id", artistIds)
+      .order("play_count", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    for (const s of (data ?? []) as unknown as CatalogSong[]) {
+      if (!seen.has(s.id)) merged.push(s);
+    }
+  }
+
+  if (byTitle.error) throw byTitle.error;
+  return merged.slice(0, limit);
 }
 
 export async function topSongs(limit = 5): Promise<CatalogSong[]> {

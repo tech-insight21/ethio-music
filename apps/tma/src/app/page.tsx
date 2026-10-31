@@ -135,14 +135,41 @@ export default function App() {
     const t = setTimeout(async () => {
       setSearching(true);
       const supabase = getSupabase();
-      const { data } = await supabase
-        .from("songs")
-        .select("*, artist:artists(id,name,slug,avatar_url,verified,monthly_listeners), genres:song_genres(genres(id,name,slug))")
-        .eq("release_status", "approved")
-        .or(`title.ilike.%${query.trim()}%,artists.name.ilike.%${query.trim()}%`)
-        .limit(20);
-      setResults((data ?? []) as unknown as Song[]);
-      setSearching(false);
+      const q = query.trim();
+      const cols =
+        "*, artist:artists(id,name,slug,avatar_url,verified,monthly_listeners), genres:song_genres(genres(id,name,slug))";
+      try {
+        // NOTE: PostgREST does not accept embedded-resource filters inside
+        // .or(), so title and artist matches run as two queries and merge.
+        const [byTitle, byArtistName] = await Promise.all([
+          supabase
+            .from("songs")
+            .select(cols)
+            .eq("release_status", "approved")
+            .ilike("title", `%${q}%`)
+            .limit(20),
+          supabase.from("artists").select("id").ilike("name", `%${q}%`).limit(20),
+        ]);
+
+        let artistSongs: Song[] = [];
+        const artistIds = (byArtistName.data ?? []).map((a) => a.id);
+        if (artistIds.length > 0) {
+          const { data } = await supabase
+            .from("songs")
+            .select(cols)
+            .eq("release_status", "approved")
+            .in("artist_id", artistIds)
+            .limit(20);
+          artistSongs = (data ?? []) as unknown as Song[];
+        }
+
+        const merged = [...((byTitle.data ?? []) as unknown as Song[])];
+        const seen = new Set(merged.map((s) => s.id));
+        for (const s of artistSongs) if (!seen.has(s.id)) merged.push(s);
+        setResults(merged);
+      } finally {
+        setSearching(false);
+      }
     }, 350);
     return () => clearTimeout(t);
   }, [query, tab]);
