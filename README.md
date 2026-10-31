@@ -9,15 +9,71 @@ Built on Supabase (PostgreSQL + Row Level Security). **Only licensed releases ar
 ethio-music/
 ├── apps/
 │   ├── tma/                    # Telegram Mini App — Next.js, static export → GitHub Pages
+│   │   └── src/
+│   │       ├── app/            # 13 routes: / search/ trending/ artists/ artist/ album/
+│   │       │                   #   song/ player/ library/ playlists/ favorites/ premium/ profile/
+│   │       ├── components/     # reusable UI (nav, mini-player, covers, states, cards)
+│   │       └── lib/            # supabase queries, auth, player, favorites, telegram SDK
 │   └── bot/                    # Telegram bot — Telegraf (search, trending, plans)
 ├── supabase/
-│   └── migrations/             # Ordered SQL migrations (schema + RLS + seed)
+│   ├── migrations/             # Ordered SQL migrations (schema + RLS + seed)
+│   └── functions/telegram-auth/# Edge Function: verifies initData, mints sessions
 ├── scripts/
 │   └── run_migrations.py       # Idempotent migration runner (local + CI)
 └── .github/workflows/
     ├── deploy.yml              # Build TMA → GitHub Pages → set bot menu button
-    └── db-migrate.yml          # Apply pending migrations on push
+    ├── db-migrate.yml          # Apply pending migrations on push
+    └── deploy-functions.yml    # Deploy edge functions (needs SUPABASE_ACCESS_TOKEN)
 ```
+
+## Mini app (apps/tma) — 13 pages
+
+| Route | Page | Data source |
+|---|---|---|
+| `/` | Home | featured promo, trending, new releases, artists |
+| `/search/` | Search | live catalog search (songs + artists) |
+| `/trending/` | Trending | top 20 by real play counts |
+| `/artists/` | Artists | approved artists |
+| `/artist/?slug=` | Artist profile | bio, followers, popular, discography |
+| `/album/?id=` | Album details | tracklist, play album |
+| `/song/?id=` | Song details | artwork, genres, share, licensing note |
+| `/player/?id=` | Full-screen player | queue, seek, haptics, deep-linkable |
+| `/library/` | My library | favorites + playlists hub |
+| `/playlists/` | Playlists | CRUD (requires sign-in) |
+| `/favorites/` | Favorites | device-local as guest, synced when signed in |
+| `/premium/` | Subscription | live plans from DB |
+| `/profile/` | User profile | Telegram identity, language, session |
+
+## Authentication (Telegram initData — the safe way)
+
+The client **never** derives identity from `initDataUnsafe`. Flow:
+
+1. Client reads the raw `WebApp.initData` string.
+2. Client POSTs it to `POST {SUPABASE_URL}/functions/v1/telegram-auth`.
+3. The edge function verifies the HMAC-SHA256 signature against the bot
+   token, rejects stale `auth_date`, provisions the auth user (the
+   `handle_new_user` trigger creates the matching `profiles` row), and
+   returns a real Supabase session.
+4. Client stores it via `supabase.auth.setSession()`.
+
+Deploy the function (one-time):
+```bash
+supabase functions deploy telegram-auth --project-ref <ref> --no-verify-jwt
+supabase secrets set TELEGRAM_BOT_TOKEN=<bot token>
+```
+Or push — `.github/workflows/deploy-functions.yml` automates it once the
+`SUPABASE_ACCESS_TOKEN` secret + `SUPABASE_ACCESS_TOKEN_SET=yes` variable exist.
+
+### Backend integration status (honest list)
+
+| Feature | State |
+|---|---|
+| Catalog browsing, search, player, play analytics | ✅ live (Supabase + RLS) |
+| Favorites (guest) | ✅ device-local, labeled as such |
+| Sign-in / synced favorites / follows / playlists | ⏳ deploy `telegram-auth` (code ready) |
+| Telebirr/Chapa checkout | ⏳ payments milestone (merchant + webhook + activation) |
+| Push notifications | ⏳ future milestone |
+
 
 ## Database (17 tables, RLS on every table)
 

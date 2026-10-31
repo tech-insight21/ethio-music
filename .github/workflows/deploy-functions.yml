@@ -1,0 +1,41 @@
+name: deploy-functions
+# Deploys Supabase Edge Functions when SUPABASE_ACCESS_TOKEN is configured.
+# One-time setup by the repo owner:
+#   1. Create a personal access token: supabase.com/dashboard → Account → Access Tokens
+#   2. Add Actions secrets: SUPABASE_ACCESS_TOKEN
+#      Add Actions variables: SUPABASE_ACCESS_TOKEN_SET=yes
+# Until then this job skips itself (auth features stay in guest mode).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: ${{ vars.SUPABASE_ACCESS_TOKEN_SET == 'yes' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy telegram-auth
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy telegram-auth \
+            --project-ref ${{ secrets.SUPABASE_REF }} \
+            --no-verify-jwt
+
+      - name: Set function secret
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          supabase secrets set TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN" \
+            --project-ref ${{ secrets.SUPABASE_REF }}
