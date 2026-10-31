@@ -1,0 +1,73 @@
+name: deploy
+# Builds the TMA as a static site → publishes to GitHub Pages →
+# points the Telegram bot's menu button at the live mini app.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/tma/package-lock.json
+
+      - name: Install
+        working-directory: apps/tma
+        run: npm install
+
+      - name: Build static export
+        working-directory: apps/tma
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/tma/out
+
+  pages:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  telegram:
+    needs: pages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point bot menu button at the live mini app
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TMA_URL: ${{ vars.TMA_URL }}
+        run: |
+          set -e
+          curl -sf "https://api.telegram.org/bot${BOT_TOKEN}/setChatMenuButton" \
+            -H "Content-Type: application/json" \
+            -d "{\"menu_button\":{\"type\":\"web_app\",\"text\":\"🎵 ETHIO MUSIC\",\"web_app\":{\"url\":\"${TMA_URL}\"}}}"
+          curl -sf "https://api.telegram.org/bot${BOT_TOKEN}/setMyCommands" \
+            -H "Content-Type: application/json" \
+            -d '{"commands":[{"command":"start","description":"🇪🇹 Open ETHIO MUSIC"},{"command":"trending","description":"🔥 Trending songs"},{"command":"search","description":"🔍 Search the catalog"},{"command":"plans","description":"⭐ Subscription plans"}]}'
+          echo "Telegram menu button + commands configured."

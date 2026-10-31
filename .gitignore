@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+out/
+dist/
+
+# environment — NEVER commit real credentials
+.env
+.env.*
+!.env.example
+
+# misc
+*.log
+.DS_Store
+.vercel

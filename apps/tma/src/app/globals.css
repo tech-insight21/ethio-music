@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Telegram theme fallbacks — overridden at runtime by tg-theme vars */
+  --tg-bg: #0e1621;
+  --tg-card: #17212b;
+  --tg-card-2: #1d2836;
+  --tg-text: #f3f4f6;
+  --tg-hint: #8b98a5;
+  --tg-accent: #f0b429;   /* Ethiopian gold */
+  --tg-green: #16a34a;    /* Ethiopian green */
+  --tg-red: #dc2626;      /* Ethiopian red */
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--tg-bg);
+  color: var(--tg-text);
+  overscroll-behavior: none;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card {
+  background: var(--tg-card);
+  border-radius: 1rem;
+}
+
+.hairline {
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+@keyframes pulse-bars {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar {
+  animation: pulse-bars 0.9s ease-in-out infinite;
+  transform-origin: bottom;
+}
